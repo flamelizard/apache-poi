@@ -22,19 +22,20 @@ How to match for czech alphabet characters? How to deal with non-ASCII chars
 in terms of reading and writing to a file?
 
 TO DO
-Customize IN rating explicitly
-Version regularly!! Like now...
-Formatting to highlight match with actual price
-support 120+60 tarific, alg needs rewrite
-Make it executable JAR
+Allow price override, do not rewrite populated cells
+Formatting to highlight match with actual price, only for full match, no
+rounding (let user to apply ROUND() func should they wish)
+write price as formula to see base price
+nice error when cenik bookmark has different name, no rated zone find -
+missing zone hints in excel
+Make it executable JAR + plugin shade
+Better logging output??
 low - Do not force user to close Excel if you need only read access - Maven build
-New mini project - turn TA Excel to Rating Excel
-    or run directly on TA with random selection of destination
-    link destinations through added column with zone code
 
 CHANGE LIST
-Options to set root dir
-Include empty cells when reading Excel rows
+Support for all common tarifications
+Options to set root dir - "excel.dir" in properties
+Include in CSV empty cells when reading Excel rows
 Duration set to 1 sec if not supplied
 Logging with log4j
 Zone functions refactored to a class
@@ -43,7 +44,7 @@ Support for SMS/MMS domestic, foreign SMS
 NOT IMPLEMENTED
 select cenik based on phone number
 default duration - iterator that cycles over list of values e.g 1 30 60
-
+customize IN rating explicitly - not worth, only few zones affected
 
 --LESSONS LEARNT--
 TDD se hodi i pro zdanlive mensi projekty. Tento projekt se zdal maly a jednoduchy, ale

@@ -26,6 +26,25 @@ public class PriceCalculator {
         return fmt.format(number);
     }
 
+    public static Integer applySingleTarific(Integer t, Integer s) {
+        Integer remainder = s % t;
+        if (remainder == 0) {
+            return s;
+        }
+        return s - remainder + t;
+    }
+
+    public static Integer applyTarification(String tarif, Integer seconds) {
+        String[] tarifItems = tarif.split("\\+");
+        Integer blockA = Integer.valueOf(tarifItems[0].trim());
+        Integer blockB = Integer.valueOf(tarifItems[1].trim());
+
+        if (seconds <= blockA) {
+            return seconds == 0 ? 0 : blockA;
+        }
+        return blockA + applySingleTarific(blockB, seconds - blockA);
+    }
+
     public Float getPriceVAT() {
         return priceVAT;
     }
@@ -43,45 +62,45 @@ public class PriceCalculator {
         if (Zones.isMessagingService(serviceType))
             return priceNoVAT;
         Float pricePerSec = priceNoVAT / 60;
-        Float price = pricePerSec * getAdjustedDuration(duration);
+        Float price = pricePerSec * applyTarification(tarification, duration);
         log.debug(String.format("[calc price %s, %s, %s->%s, %s\n",
                 price, pricePerSec, duration,
-                getAdjustedDuration(duration),
+                applyTarification(tarification, duration),
                 price));
         return roundAsRequired(price);
     }
 
-    private Integer getAdjustedDuration(Integer duration) {
-        String[] items = tarification.split("\\+");
-        Integer firstMin = Integer.valueOf(items[0].trim());
-        Integer otherMin = Integer.valueOf(items[1].trim());
-
-        if (duration <= 60) {
-            return adjustLessThanMinuteDuration(duration, firstMin);
-        }
-        Integer minuteRemainder = duration % 60;
-//        System.out.printf("[adjust %s,%s\n",
-//                minuteRemainder, duration);
-        return duration - minuteRemainder + adjustLessThanMinuteDuration(
-                minuteRemainder, otherMin);
-    }
-
-    private Integer adjustLessThanMinuteDuration(
-            Integer duration, Integer minuteTarific) {
-        if (duration <= 0)
-            return 0;
-        switch (minuteTarific) {
-            case 60:
-                return 60;
-            case 30:
-                if (duration > 30)
-                    return 60;
-                return 30;
-            case 1:
-                return duration;
-            default:
-                System.out.println("Warning: tarification not supported!!");
-                return 999; //indicate not supported value
-        }
-    }
+//    private Integer getAdjustedDuration(Integer duration) {
+//        String[] items = tarification.split("\\+");
+//        Integer firstMin = Integer.valueOf(items[0].trim());
+//        Integer otherMin = Integer.valueOf(items[1].trim());
+//
+//        if (duration <= 60) {
+//            return adjustLessThanMinuteDuration(duration, firstMin);
+//        }
+//        Integer minuteRemainder = duration % 60;
+////        System.out.printf("[adjust %s,%s\n",
+////                minuteRemainder, duration);
+//        return duration - minuteRemainder + adjustLessThanMinuteDuration(
+//                minuteRemainder, otherMin);
+//    }
+//
+//    private Integer adjustLessThanMinuteDuration(
+//            Integer duration, Integer minuteTarific) {
+//        if (duration <= 0)
+//            return 0;
+//        switch (minuteTarific) {
+//            case 60:
+//                return 60;
+//            case 30:
+//                if (duration > 30)
+//                    return 60;
+//                return 30;
+//            case 1:
+//                return duration;
+//            default:
+//                System.out.println("Warning: tarification not supported!!");
+//                return 999; //indicate not supported value
+//        }
+//    }
 }
