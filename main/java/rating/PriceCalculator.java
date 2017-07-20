@@ -26,15 +26,16 @@ public class PriceCalculator {
         return fmt.format(number);
     }
 
-    public static Integer applySingleTarific(Integer t, Integer s) {
-        Integer remainder = s % t;
+    static Integer applySingleTarific(Integer tariff, Integer seconds) {
+        Integer remainder = seconds % tariff;
         if (remainder == 0) {
-            return s;
+            return seconds;
         }
-        return s - remainder + t;
+        return seconds - remainder + tariff;
     }
 
-    public static Integer applyTarification(String tarif, Integer seconds) {
+    //    made static for unit testing
+    static Integer applyTarification(String tarif, Integer seconds) {
         String[] tarifItems = tarif.split("\\+");
         Integer blockA = Integer.valueOf(tarifItems[0].trim());
         Integer blockB = Integer.valueOf(tarifItems[1].trim());
@@ -57,6 +58,7 @@ public class PriceCalculator {
         return Float.valueOf(numFmt.format(number));
     }
 
+    @Deprecated
     public Float calculatePrice(Integer duration) {
         Float priceNoVAT = roundAsRequired(priceVAT / 1.21f);
         if (Zones.isMessagingService(serviceType))
@@ -70,37 +72,13 @@ public class PriceCalculator {
         return roundAsRequired(price);
     }
 
-//    private Integer getAdjustedDuration(Integer duration) {
-//        String[] items = tarification.split("\\+");
-//        Integer firstMin = Integer.valueOf(items[0].trim());
-//        Integer otherMin = Integer.valueOf(items[1].trim());
-//
-//        if (duration <= 60) {
-//            return adjustLessThanMinuteDuration(duration, firstMin);
-//        }
-//        Integer minuteRemainder = duration % 60;
-////        System.out.printf("[adjust %s,%s\n",
-////                minuteRemainder, duration);
-//        return duration - minuteRemainder + adjustLessThanMinuteDuration(
-//                minuteRemainder, otherMin);
-//    }
-//
-//    private Integer adjustLessThanMinuteDuration(
-//            Integer duration, Integer minuteTarific) {
-//        if (duration <= 0)
-//            return 0;
-//        switch (minuteTarific) {
-//            case 60:
-//                return 60;
-//            case 30:
-//                if (duration > 30)
-//                    return 60;
-//                return 30;
-//            case 1:
-//                return duration;
-//            default:
-//                System.out.println("Warning: tarification not supported!!");
-//                return 999; //indicate not supported value
-//        }
-//    }
+    public String getCallPriceAsFormula(Integer duration) {
+        Float priceNoVAT = roundAsRequired(priceVAT / 1.21f);
+        if (Zones.isMessagingService(serviceType))
+            return priceNoVAT.toString();
+        return String.format("round((%f / 60) * %d, 3)",
+                priceNoVAT, applyTarification(tarification, duration));
+    }
+
+
 }

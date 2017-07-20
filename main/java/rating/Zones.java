@@ -66,6 +66,8 @@ public class Zones {
                 );
             }
         }
+        if (availableZones.isEmpty())
+            throw new RatingException("Missing rating hints in Rating excel");
 //        availableZones.forEach((r)-> System.out.println("[zone " + r));
     }
 

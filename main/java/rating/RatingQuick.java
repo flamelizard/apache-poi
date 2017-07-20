@@ -22,17 +22,13 @@ How to match for czech alphabet characters? How to deal with non-ASCII chars
 in terms of reading and writing to a file?
 
 TO DO
-Allow price override, do not rewrite populated cells
-Formatting to highlight match with actual price, only for full match, no
-rounding (let user to apply ROUND() func should they wish)
-write price as formula to see base price
-nice error when cenik bookmark has different name, no rated zone find -
-missing zone hints in excel
+simpler zone hints without prefix "D_"
 Make it executable JAR + plugin shade
 Better logging output??
-low - Do not force user to close Excel if you need only read access - Maven build
 
 CHANGE LIST
+write price as formula to see base price
+Price override - non-blank cell is skipped
 Support for all common tarifications
 Options to set root dir - "excel.dir" in properties
 Include in CSV empty cells when reading Excel rows
@@ -42,6 +38,8 @@ Zone functions refactored to a class
 Support for SMS/MMS domestic, foreign SMS
 
 NOT IMPLEMENTED
+Formatting to highlight match with actual price, only for full match, no
+rounding (let user to apply ROUND() func should they wish)
 select cenik based on phone number
 default duration - iterator that cycles over list of values e.g 1 30 60
 customize IN rating explicitly - not worth, only few zones affected
@@ -72,6 +70,7 @@ public class RatingQuick {
     private List<String> destToZone = new ArrayList<>();
     private String zonesSheetName = "Operator_Vzorky";
     private boolean debug;
+    private boolean overrideCenikPrice = true;
 
     public RatingQuick() throws IOException {
         loadProperties(propertyFile);
@@ -84,7 +83,6 @@ public class RatingQuick {
         rating.writePricesToTestCases();
     }
 
-    //    empty cell added as null string
     public static List<String> getExcelSheetAsCsv(Path file, String sheetName)
             throws IOException {
         FileInputStream fis = new FileInputStream(file.toString());
@@ -144,14 +142,6 @@ public class RatingQuick {
             throw new RatingException("File not found: " + pattern);
         return matchingFiles;
     }
-//
-//    public void setProperties(String propertyFile) {
-//        this.propertyFile = propertyFile;
-//    }
-
-    public Properties getProperties() {
-        return properties;
-    }
 
     public Path getRatingFile() throws IOException {
         return findFileInRootDir(properties.getProperty("pattern.rating"));
@@ -185,6 +175,8 @@ public class RatingQuick {
         FileInputStream fis = new FileInputStream(ratingFile.toString());
         Workbook wb = new XSSFWorkbook(fis);
         Zones zones = new Zones(getCenikFile().toString(), cenikSheetName);
+        FormulaEvaluator evaluator = wb.getCreationHelper()
+                .createFormulaEvaluator();
 
         Sheet testCases = wb.getSheet(ratingSheetName);
         Map<String, Integer> testFields = new HashMap<>();
@@ -212,7 +204,8 @@ public class RatingQuick {
             }
 
             String _duration = cells.get(testFields.get("duration"));
-            duration = _duration.equals("") ? 1 : Integer.valueOf(_duration);   // default duration 1 sec
+            // default duration 1 sec
+            duration = _duration.equals("") ? 1 : Integer.valueOf(_duration);
 
             zone = lookupZoneForDest(dest);
             if (zone == null) {
@@ -224,24 +217,37 @@ public class RatingQuick {
 
             PriceCalculator priceCalc = new PriceCalculator(
                     Float.valueOf(ratedZone.getPrice()), ratedZone.getTarification(), serviceType);
-            Float finalPrice = priceCalc.calculatePrice(duration);
-            log.debug(String.format("[test_case %s,%s,%s", row.getRowNum(), ratedZone, finalPrice));
-            Cell price = row.createCell(testFields.get("expected price"));
-            price.setCellValue(finalPrice.toString());
+/*
+Price override
+Row.getCell() returns null for empty cell. For this case, Cell
+Policy will make it create a cell with blank value.
+*/
+            Cell price = row.getCell(testFields.get("expected price"),
+                    Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+//            Price override
+            if (fmt.formatCellValue(price).equals("")) {
+                price.setCellFormula(priceCalc.getCallPriceAsFormula(duration));
+            }
+            log.debug(String.format("[test_case %s,%s,%s",
+                    row.getRowNum(), ratedZone,
+                    fmt.formatCellValue(price, evaluator)));
 
-//            cannot use float value since it shows as very long number
-//            conversion to string is possible but prohibits conditional formatting of the cell
-//            DataFormat dataFmt = wb.createDataFormat();
-//            CellStyle style = wb.createCellStyle();
-//            style.setDataFormat(dataFmt.getFormat("#.###"));
-//            price.setCellStyle(style);
+/*
+cannot use float value since it shows as very long number
+conversion to string is possible but prohibits conditional formatting of the cell
+DataFormat dataFmt = wb.createDataFormat();
+CellStyle style = wb.createCellStyle();
+style.setDataFormat(dataFmt.getFormat("#.###"));
+price.setCellStyle(style);
+*/
         }
 
         if (debug) {
             log.debug("[debug mode - no write");
             for (Row row : wb.getSheet(ratingSheetName)) {
                 for (Cell cell : row) {
-                    System.out.printf(fmt.formatCellValue(cell) + ", ");
+                    System.out.printf(
+                            fmt.formatCellValue(cell) + ", ", evaluator);
                 }
                 System.out.println();
             }

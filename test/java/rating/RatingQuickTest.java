@@ -5,12 +5,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.closeTo;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -42,24 +40,10 @@ public class RatingQuickTest {
                 continue;
             }
             String[] cells = testCase.split(";");
-            assertThat(testCase, cells[8], equalTo(cells[10]));
+//            assertThat(testCase, cells[8], equalTo(cells[10]));
+            assertThat(testCase, Double.parseDouble(cells[8]),
+                    closeTo(Double.parseDouble(cells[10]), 0.002));
         }
-    }
-
-//    @Test
-//    public void findingCenikFiles() throws IOException {
-//        List<Path> files = RatingQuick.findFilesInRootDir("Cen.+");
-//        System.out.println("[all cenik " + files);
-//    }
-
-    @Test
-    public void checkPathBehaviour() {
-        Path p = Paths.get("D:\\projects\\excel-tools\\src\\main\\test " +
-                "files\\unittest\\Prop_60+60.properties");
-        System.out.println("full " + p);
-        System.out.println("is file " + Files.isRegularFile(p));
-        System.out.println("parent " + p.getParent());
-        System.out.println("root " + p.getRoot());
     }
 
     @Ignore
